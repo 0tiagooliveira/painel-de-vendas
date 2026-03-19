@@ -20,6 +20,20 @@ function DashboardApp() {
   const [data, setData] = useState<DashboardState>(INITIAL_DASHBOARD_DATA);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  const handleSyncError = (error: unknown, operationType: OperationType, path: string) => {
+    setIsSyncing(false);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    setSyncError(errorMessage);
+
+    // Preserve rich error logging but do not break UI flow.
+    try {
+      handleFirestoreError(error, operationType, path);
+    } catch {
+      // no-op
+    }
+  };
 
   const seedSharedDataIfNeeded = async (userId: string) => {
     const sharedDashboardRef = doc(db, SHARED_DASHBOARD_DOC_PATH);
@@ -84,6 +98,7 @@ function DashboardApp() {
     if (!user) return;
 
     setIsSyncing(true);
+    setSyncError(null);
     const sharedDashboardRef = doc(db, SHARED_DASHBOARD_DOC_PATH);
     const sharedMonthlyRef = collection(db, SHARED_DASHBOARD_MONTHLY_PATH);
 
@@ -102,10 +117,10 @@ function DashboardApp() {
           }
         } else {
           setDoc(sharedDashboardRef, { currentMonthId: INITIAL_DASHBOARD_DATA.currentMonthId }, { merge: true })
-            .catch((err) => handleFirestoreError(err, OperationType.CREATE, SHARED_DASHBOARD_DOC_PATH));
+            .catch((err) => handleSyncError(err, OperationType.CREATE, SHARED_DASHBOARD_DOC_PATH));
         }
       }, (error) => {
-        handleFirestoreError(error, OperationType.GET, SHARED_DASHBOARD_DOC_PATH);
+        handleSyncError(error, OperationType.GET, SHARED_DASHBOARD_DOC_PATH);
       });
 
       // Listen to shared monthly data
@@ -126,17 +141,16 @@ function DashboardApp() {
             const docRef = doc(db, `${SHARED_DASHBOARD_MONTHLY_PATH}/${month.id}`);
             batch.set(docRef, month);
           });
-          batch.commit().catch((err) => handleFirestoreError(err, OperationType.CREATE, SHARED_DASHBOARD_MONTHLY_PATH));
+          batch.commit().catch((err) => handleSyncError(err, OperationType.CREATE, SHARED_DASHBOARD_MONTHLY_PATH));
         }
         setIsSyncing(false);
       }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, SHARED_DASHBOARD_MONTHLY_PATH);
+        handleSyncError(error, OperationType.LIST, SHARED_DASHBOARD_MONTHLY_PATH);
       });
     };
 
     startListeners().catch((error) => {
-      handleFirestoreError(error, OperationType.GET, SHARED_DASHBOARD_DOC_PATH);
-      setIsSyncing(false);
+      handleSyncError(error, OperationType.GET, SHARED_DASHBOARD_DOC_PATH);
     });
 
     return () => {
@@ -178,6 +192,36 @@ function DashboardApp() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (syncError) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-4">
+        <div className="bg-zinc-900 border border-red-900 p-6 rounded-2xl max-w-xl w-full shadow-2xl">
+          <h2 className="text-xl font-bold text-white mb-2">Falha ao sincronizar dados</h2>
+          <p className="text-zinc-300 mb-4">
+            Verifique se as regras do Firestore foram publicadas para o caminho compartilhado.
+          </p>
+          <p className="text-xs text-zinc-400 bg-zinc-950 border border-zinc-800 rounded-lg p-3 break-all">
+            {syncError}
+          </p>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              Tentar novamente
+            </button>
+            <button
+              onClick={logOut}
+              className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
+              Trocar usuário
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
