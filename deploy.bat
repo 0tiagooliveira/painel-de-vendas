@@ -3,11 +3,15 @@ setlocal enabledelayedexpansion
 
 cd /d "%~dp0"
 
-set "FIREBASE_PROJECT_ID=ai-studio-applet-webapp-e5624"
+set "FIREBASE_PROJECT_ID=dashboard-mercado-livre-ionlab"
 set "HOSTING_URL_1=https://%FIREBASE_PROJECT_ID%.web.app"
 set "HOSTING_URL_2=https://%FIREBASE_PROJECT_ID%.firebaseapp.com"
 set "GITHUB_REPO_URL=https://github.com/0tiagooliveira/dashboard-ionlab.git"
 set "DEPLOY_ONLY=hosting"
+
+if /I "%~1"=="full" (
+  set "DEPLOY_ONLY=firestore,hosting"
+)
 
 if /I "%~2"=="full" (
   set "DEPLOY_ONLY=firestore,hosting"
@@ -32,6 +36,9 @@ if errorlevel 1 (
 )
 
 set "COMMIT_MSG=%~1"
+if /I "%COMMIT_MSG%"=="full" (
+  set "COMMIT_MSG=%~2"
+)
 if "%COMMIT_MSG%"=="" (
   set /p COMMIT_MSG=Mensagem do commit: 
 )
