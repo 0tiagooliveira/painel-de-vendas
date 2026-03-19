@@ -6,7 +6,24 @@ service cloud.firestore {
     // Assumed Data Model
     // ===============================================================
     //
-    // Collection: users
+    // Collection: sharedDashboard
+    // Document ID: global
+    // Fields:
+    //   - currentMonthId: string (optional)
+    //
+    // Collection: sharedDashboard/global/monthlyData
+    // Document ID: {monthId}
+    // Fields:
+    //   - id: string (required)
+    //   - month: string (required)
+    //   - vitralabSales: number (required)
+    //   - onixlabSales: number (required)
+    //   - nativalabSales: number (required)
+    //   - goal: number (required)
+    //   - notes: string (required)
+    //   - invoiceCount: number (required)
+    //
+    // Legacy Collection: users
     // Document ID: {userId}
     // Fields:
     //   - currentMonthId: string (optional)
@@ -58,6 +75,20 @@ service cloud.firestore {
              data.goal is number && data.goal >= 0 &&
              data.notes is string && data.notes.size() <= 1000 &&
              data.invoiceCount is number && data.invoiceCount >= 0;
+    }
+
+    match /sharedDashboard/global {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidUserProfile(request.resource.data);
+      allow update: if isAuthenticated() && isValidUserProfile(request.resource.data);
+      allow delete: if false;
+
+      match /monthlyData/{monthId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && isValidMonthlyData(request.resource.data);
+        allow update: if isAuthenticated() && isValidMonthlyData(request.resource.data);
+        allow delete: if isAuthenticated();
+      }
     }
 
     match /users/{userId} {

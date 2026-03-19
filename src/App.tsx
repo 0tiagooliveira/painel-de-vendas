@@ -10,7 +10,10 @@ import { Settings, LogOut, Loader2 } from 'lucide-react';
 import { FirebaseProvider, useAuth } from './components/FirebaseProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { db, handleFirestoreError, OperationType } from './firebase';
-import { collection, doc, onSnapshot, setDoc, getDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, onSnapshot, setDoc, writeBatch } from 'firebase/firestore';
+
+const SHARED_DASHBOARD_DOC_PATH = 'sharedDashboard/global';
+const SHARED_DASHBOARD_MONTHLY_PATH = `${SHARED_DASHBOARD_DOC_PATH}/monthlyData`;
 
 function DashboardApp() {
   const { user, logOut } = useAuth();
@@ -18,78 +21,144 @@ function DashboardApp() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isSyncing, setIsSyncing] = useState(true);
 
+  const seedSharedDataIfNeeded = async (userId: string) => {
+    const sharedDashboardRef = doc(db, SHARED_DASHBOARD_DOC_PATH);
+
+    try {
+      const [sharedDashboardSnap, sharedMonthlySnap] = await Promise.all([
+        getDoc(sharedDashboardRef),
+        getDocs(collection(db, SHARED_DASHBOARD_MONTHLY_PATH)),
+      ]);
+
+      if (sharedDashboardSnap.exists() && !sharedMonthlySnap.empty) {
+        return;
+      }
+
+      let seedCurrentMonthId = INITIAL_DASHBOARD_DATA.currentMonthId;
+      let seedMonthlyData = INITIAL_DASHBOARD_DATA.monthlyData;
+
+      const [legacyUserSnap, legacyMonthlySnap] = await Promise.all([
+        getDoc(doc(db, 'users', userId)),
+        getDocs(collection(db, `users/${userId}/monthlyData`)),
+      ]);
+
+      if (legacyUserSnap.exists()) {
+        const legacyUserData = legacyUserSnap.data();
+        if (typeof legacyUserData.currentMonthId === 'string' && legacyUserData.currentMonthId.length > 0) {
+          seedCurrentMonthId = legacyUserData.currentMonthId;
+        }
+      }
+
+      if (!legacyMonthlySnap.empty) {
+        const migratedMonthlyData: MonthlyData[] = [];
+        legacyMonthlySnap.forEach((monthDoc) => {
+          migratedMonthlyData.push(monthDoc.data() as MonthlyData);
+        });
+
+        const orderMap = new Map(INITIAL_DASHBOARD_DATA.monthlyData.map((m, i) => [m.id, i]));
+        migratedMonthlyData.sort((a, b) => (orderMap.get(a.id) ?? 99) - (orderMap.get(b.id) ?? 99));
+        seedMonthlyData = migratedMonthlyData;
+      }
+
+      const batch = writeBatch(db);
+
+      if (!sharedDashboardSnap.exists()) {
+        batch.set(sharedDashboardRef, { currentMonthId: seedCurrentMonthId }, { merge: true });
+      }
+
+      if (sharedMonthlySnap.empty) {
+        seedMonthlyData.forEach((month) => {
+          const monthRef = doc(db, `${SHARED_DASHBOARD_MONTHLY_PATH}/${month.id}`);
+          batch.set(monthRef, month, { merge: true });
+        });
+      }
+
+      await batch.commit();
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, SHARED_DASHBOARD_DOC_PATH);
+    }
+  };
+
   // Fetch data from Firestore
   useEffect(() => {
     if (!user) return;
 
     setIsSyncing(true);
-    const userId = user.uid;
+    const sharedDashboardRef = doc(db, SHARED_DASHBOARD_DOC_PATH);
+    const sharedMonthlyRef = collection(db, SHARED_DASHBOARD_MONTHLY_PATH);
 
-    // Listen to user profile (for currentMonthId)
-    const unsubscribeUser = onSnapshot(doc(db, 'users', userId), (docSnap) => {
-      if (docSnap.exists()) {
-        const userData = docSnap.data();
-        if (userData.currentMonthId) {
-          setData(prev => ({ ...prev, currentMonthId: userData.currentMonthId }));
+    let unsubscribeDashboard = () => {};
+    let unsubscribeMonthly = () => {};
+
+    const startListeners = async () => {
+      await seedSharedDataIfNeeded(user.uid);
+
+      // Listen to shared dashboard state (for currentMonthId)
+      unsubscribeDashboard = onSnapshot(sharedDashboardRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const dashboardState = docSnap.data();
+          if (dashboardState.currentMonthId) {
+            setData((prev) => ({ ...prev, currentMonthId: dashboardState.currentMonthId }));
+          }
+        } else {
+          setDoc(sharedDashboardRef, { currentMonthId: INITIAL_DASHBOARD_DATA.currentMonthId }, { merge: true })
+            .catch((err) => handleFirestoreError(err, OperationType.CREATE, SHARED_DASHBOARD_DOC_PATH));
         }
-      } else {
-        // Initialize user profile if it doesn't exist
-        setDoc(doc(db, 'users', userId), { currentMonthId: INITIAL_DASHBOARD_DATA.currentMonthId })
-          .catch(err => handleFirestoreError(err, OperationType.CREATE, `users/${userId}`));
-      }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `users/${userId}`);
-    });
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, SHARED_DASHBOARD_DOC_PATH);
+      });
 
-    // Listen to monthly data
-    const unsubscribeMonthly = onSnapshot(collection(db, `users/${userId}/monthlyData`), (snapshot) => {
-      if (!snapshot.empty) {
-        const monthlyData: MonthlyData[] = [];
-        snapshot.forEach((doc) => {
-          monthlyData.push(doc.data() as MonthlyData);
-        });
-        
-        // Sort by id or month to keep order consistent (assuming id format allows sorting, or just use the predefined order)
-        // For simplicity, we'll sort by the index in INITIAL_DASHBOARD_DATA
-        const orderMap = new Map(INITIAL_DASHBOARD_DATA.monthlyData.map((m, i) => [m.id, i]));
-        monthlyData.sort((a, b) => (orderMap.get(a.id) ?? 99) - (orderMap.get(b.id) ?? 99));
+      // Listen to shared monthly data
+      unsubscribeMonthly = onSnapshot(sharedMonthlyRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const monthlyData: MonthlyData[] = [];
+          snapshot.forEach((monthDoc) => {
+            monthlyData.push(monthDoc.data() as MonthlyData);
+          });
 
-        setData(prev => ({ ...prev, monthlyData }));
-      } else {
-        // Initialize monthly data if empty
-        const batch = writeBatch(db);
-        INITIAL_DASHBOARD_DATA.monthlyData.forEach(month => {
-          const docRef = doc(db, `users/${userId}/monthlyData`, month.id);
-          batch.set(docRef, month);
-        });
-        batch.commit().catch(err => handleFirestoreError(err, OperationType.CREATE, `users/${userId}/monthlyData`));
-      }
+          const orderMap = new Map(INITIAL_DASHBOARD_DATA.monthlyData.map((m, i) => [m.id, i]));
+          monthlyData.sort((a, b) => (orderMap.get(a.id) ?? 99) - (orderMap.get(b.id) ?? 99));
+
+          setData((prev) => ({ ...prev, monthlyData }));
+        } else {
+          const batch = writeBatch(db);
+          INITIAL_DASHBOARD_DATA.monthlyData.forEach((month) => {
+            const docRef = doc(db, `${SHARED_DASHBOARD_MONTHLY_PATH}/${month.id}`);
+            batch.set(docRef, month);
+          });
+          batch.commit().catch((err) => handleFirestoreError(err, OperationType.CREATE, SHARED_DASHBOARD_MONTHLY_PATH));
+        }
+        setIsSyncing(false);
+      }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, SHARED_DASHBOARD_MONTHLY_PATH);
+      });
+    };
+
+    startListeners().catch((error) => {
+      handleFirestoreError(error, OperationType.GET, SHARED_DASHBOARD_DOC_PATH);
       setIsSyncing(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, `users/${userId}/monthlyData`);
     });
 
     return () => {
-      unsubscribeUser();
+      unsubscribeDashboard();
       unsubscribeMonthly();
     };
   }, [user]);
 
   const handleUpdateData = async (newData: DashboardState) => {
     if (!user) return;
-    const userId = user.uid;
     
     try {
       const batch = writeBatch(db);
       
       // Update currentMonthId
       if (newData.currentMonthId !== data.currentMonthId) {
-        batch.update(doc(db, 'users', userId), { currentMonthId: newData.currentMonthId });
+        batch.set(doc(db, SHARED_DASHBOARD_DOC_PATH), { currentMonthId: newData.currentMonthId }, { merge: true });
       }
 
       // Update monthly data
       newData.monthlyData.forEach(month => {
-        const docRef = doc(db, `users/${userId}/monthlyData`, month.id);
+        const docRef = doc(db, `${SHARED_DASHBOARD_MONTHLY_PATH}/${month.id}`);
         batch.set(docRef, month, { merge: true });
       });
 
@@ -97,7 +166,7 @@ function DashboardApp() {
       
       // Local state will be updated by onSnapshot listeners
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${userId}`);
+      handleFirestoreError(error, OperationType.UPDATE, SHARED_DASHBOARD_DOC_PATH);
     }
   };
 
