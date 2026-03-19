@@ -7,6 +7,11 @@ set "FIREBASE_PROJECT_ID=ai-studio-applet-webapp-e5624"
 set "HOSTING_URL_1=https://%FIREBASE_PROJECT_ID%.web.app"
 set "HOSTING_URL_2=https://%FIREBASE_PROJECT_ID%.firebaseapp.com"
 set "GITHUB_REPO_URL=https://github.com/0tiagooliveira/dashboard-ionlab.git"
+set "DEPLOY_ONLY=hosting"
+
+if /I "%~2"=="full" (
+  set "DEPLOY_ONLY=firestore,hosting"
+)
 
 where git >nul 2>nul
 if errorlevel 1 (
@@ -147,9 +152,14 @@ if errorlevel 1 (
 
 echo.
 echo [4/5] Fazendo deploy no Firebase...
-call npx firebase-tools deploy --project "%FIREBASE_PROJECT_ID%"
+echo [INFO] Alvos de deploy: %DEPLOY_ONLY%
+call npx firebase-tools deploy --only "%DEPLOY_ONLY%" --project "%FIREBASE_PROJECT_ID%"
 if errorlevel 1 (
   echo [ERRO] Falha no deploy do Firebase.
+  if /I "%DEPLOY_ONLY%"=="firestore,hosting" (
+    echo [DICA] O modo full exige billing no projeto para Firestore.
+    echo [DICA] Rode sem o parametro "full" para publicar apenas Hosting.
+  )
   goto :fail
 )
 
