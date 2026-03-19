@@ -1,0 +1,77 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - currentMonthId: string (optional)
+    //
+    // Collection: users/{userId}/monthlyData
+    // Document ID: {monthId}
+    // Fields:
+    //   - id: string (required)
+    //   - month: string (required)
+    //   - vitralabSales: number (required)
+    //   - onixlabSales: number (required)
+    //   - nativalabSales: number (required)
+    //   - goal: number (required)
+    //   - notes: string (required)
+    //   - invoiceCount: number (required)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidUserProfile(data) {
+      return hasOnlyAllowedFields(['currentMonthId']) &&
+             (!('currentMonthId' in data) || (data.currentMonthId is string && data.currentMonthId.size() <= 100));
+    }
+
+    function isValidMonthlyData(data) {
+      return hasOnlyAllowedFields(['id', 'month', 'vitralabSales', 'onixlabSales', 'nativalabSales', 'goal', 'notes', 'invoiceCount']) &&
+             hasRequiredFields(['id', 'month', 'vitralabSales', 'onixlabSales', 'nativalabSales', 'goal', 'notes', 'invoiceCount']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 50 &&
+             data.month is string && data.month.size() > 0 && data.month.size() <= 50 &&
+             data.vitralabSales is number && data.vitralabSales >= 0 &&
+             data.onixlabSales is number && data.onixlabSales >= 0 &&
+             data.nativalabSales is number && data.nativalabSales >= 0 &&
+             data.goal is number && data.goal >= 0 &&
+             data.notes is string && data.notes.size() <= 1000 &&
+             data.invoiceCount is number && data.invoiceCount >= 0;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow delete: if isOwner(userId);
+
+      match /monthlyData/{monthId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidMonthlyData(request.resource.data);
+        allow update: if isOwner(userId) && isValidMonthlyData(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

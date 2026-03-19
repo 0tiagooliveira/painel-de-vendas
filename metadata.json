@@ -1,0 +1,5 @@
+{
+  "name": "IonLab Dashboard",
+  "description": "Interactive sales dashboard for IonLab with real-time data editing and performance tracking.",
+  "requestFramePermissions": []
+}
