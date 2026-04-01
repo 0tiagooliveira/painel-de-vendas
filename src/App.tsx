@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { DashboardOverview } from './components/DashboardOverview';
-import { SalesEvolutionComparison } from './components/SalesEvolutionComparison';
 import { PerformanceCharts } from './components/PerformanceCharts';
 import { DataEditor } from './components/DataEditor';
 import { BaseDeValoresTable } from './components/BaseDeValoresTable';
@@ -306,7 +305,6 @@ function DashboardApp() {
           <>
             <DashboardOverview data={currentMonthData} />
             <CommissionDashboard data={currentMonthData} />
-            <SalesEvolutionComparison data={data.monthlyData} currentMonthId={data.currentMonthId} />
           </>
         )}
         

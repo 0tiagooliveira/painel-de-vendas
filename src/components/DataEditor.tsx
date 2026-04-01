@@ -9,8 +9,24 @@ interface DataEditorProps {
   onClose: () => void;
 }
 
+// Format number to Brazilian currency display format (e.g., 191297.55 -> 191.297,55)
+const formatBRL = (value: number | string): string => {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(num)) return '';
+  return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+// Parse Brazilian currency format to number (e.g., "191.297,55" -> 191297.55)
+const parseBRL = (value: string): number => {
+  if (!value) return 0;
+  // Remove the thousands separator (.) and replace decimal separator (,) with (.)
+  const normalized = value.replace(/\./g, '').replace(/,/g, '.');
+  return parseFloat(normalized) || 0;
+};
+
 export const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, isOpen, onClose }) => {
   const [localData, setLocalData] = useState<DashboardState>(data);
+  const [editingFields, setEditingFields] = useState<{ [key: string]: boolean }>({});
 
   // Update local state when props change
   React.useEffect(() => {
@@ -19,9 +35,18 @@ export const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, isOpen, 
 
   const handleMonthlyDataChange = (index: number, field: keyof MonthlyData, value: string | number) => {
     const newMonthlyData = [...localData.monthlyData];
+    
+    // Parse the value based on field type
+    let parsedValue: string | number;
+    if (typeof value === 'string' && ['vitralabSales', 'onixlabSales', 'nativalabSales', 'goal'].includes(field as string)) {
+      parsedValue = parseBRL(value);
+    } else {
+      parsedValue = value;
+    }
+    
     newMonthlyData[index] = {
       ...newMonthlyData[index],
-      [field]: value
+      [field]: parsedValue
     };
     setLocalData(prev => ({ ...prev, monthlyData: newMonthlyData }));
   };
@@ -30,6 +55,15 @@ export const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, isOpen, 
     onUpdate(localData);
     onClose();
   };
+
+  const toggleFieldEditing = (fieldId: string) => {
+    setEditingFields(prev => ({
+      ...prev,
+      [fieldId]: !prev[fieldId]
+    }));
+  };
+
+  const getFieldId = (monthId: string, fieldName: string): string => `${monthId}-${fieldName}`;
 
   if (!isOpen) return null;
 
@@ -65,37 +99,49 @@ export const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, isOpen, 
                     <div>
                       <label className="block text-xs text-zinc-500 mb-1">Venda Vitralab (R$)</label>
                       <input
-                        type="number"
-                        value={monthData.vitralabSales || ''}
-                        onChange={(e) => handleMonthlyDataChange(index, 'vitralabSales', Number(e.target.value))}
+                        type="text"
+                        value={editingFields[getFieldId(monthData.id, 'vitralabSales')] ? monthData.vitralabSales : formatBRL(monthData.vitralabSales)}
+                        onChange={(e) => handleMonthlyDataChange(index, 'vitralabSales', e.target.value)}
+                        onFocus={() => toggleFieldEditing(getFieldId(monthData.id, 'vitralabSales'))}
+                        onBlur={() => toggleFieldEditing(getFieldId(monthData.id, 'vitralabSales'))}
                         className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                        placeholder="0,00"
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-zinc-500 mb-1">Venda Onixlab (R$)</label>
                       <input
-                        type="number"
-                        value={monthData.onixlabSales || ''}
-                        onChange={(e) => handleMonthlyDataChange(index, 'onixlabSales', Number(e.target.value))}
+                        type="text"
+                        value={editingFields[getFieldId(monthData.id, 'onixlabSales')] ? monthData.onixlabSales : formatBRL(monthData.onixlabSales)}
+                        onChange={(e) => handleMonthlyDataChange(index, 'onixlabSales', e.target.value)}
+                        onFocus={() => toggleFieldEditing(getFieldId(monthData.id, 'onixlabSales'))}
+                        onBlur={() => toggleFieldEditing(getFieldId(monthData.id, 'onixlabSales'))}
                         className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                        placeholder="0,00"
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-zinc-500 mb-1">Venda Nativalab (R$)</label>
                       <input
-                        type="number"
-                        value={monthData.nativalabSales || ''}
-                        onChange={(e) => handleMonthlyDataChange(index, 'nativalabSales', Number(e.target.value))}
+                        type="text"
+                        value={editingFields[getFieldId(monthData.id, 'nativalabSales')] ? monthData.nativalabSales : formatBRL(monthData.nativalabSales)}
+                        onChange={(e) => handleMonthlyDataChange(index, 'nativalabSales', e.target.value)}
+                        onFocus={() => toggleFieldEditing(getFieldId(monthData.id, 'nativalabSales'))}
+                        onBlur={() => toggleFieldEditing(getFieldId(monthData.id, 'nativalabSales'))}
                         className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                        placeholder="0,00"
                       />
                     </div>
                     <div>
                       <label className="block text-xs text-zinc-500 mb-1">Meta (R$)</label>
                       <input
-                        type="number"
-                        value={monthData.goal || ''}
-                        onChange={(e) => handleMonthlyDataChange(index, 'goal', Number(e.target.value))}
+                        type="text"
+                        value={editingFields[getFieldId(monthData.id, 'goal')] ? monthData.goal : formatBRL(monthData.goal)}
+                        onChange={(e) => handleMonthlyDataChange(index, 'goal', e.target.value)}
+                        onFocus={() => toggleFieldEditing(getFieldId(monthData.id, 'goal'))}
+                        onBlur={() => toggleFieldEditing(getFieldId(monthData.id, 'goal'))}
                         className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+                        placeholder="0,00"
                       />
                     </div>
                     <div>
