@@ -12,6 +12,10 @@ interface PerformanceChartsProps {
 export const PerformanceCharts: React.FC<PerformanceChartsProps> = ({ data }) => {
   // Filter out empty months for cleaner charts
   const activeData = data.filter(d => d.vitralabSales > 0 || d.onixlabSales > 0 || d.nativalabSales > 0 || d.goal > 0);
+  const evolutionData = activeData.map((d) => ({
+    ...d,
+    totalSales: d.vitralabSales + d.onixlabSales + d.nativalabSales,
+  }));
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -21,7 +25,7 @@ export const PerformanceCharts: React.FC<PerformanceChartsProps> = ({ data }) =>
         <div className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={activeData}
+              data={evolutionData}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#333" />
@@ -32,9 +36,7 @@ export const PerformanceCharts: React.FC<PerformanceChartsProps> = ({ data }) =>
                 formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, '']}
               />
               <Legend />
-              <Line type="monotone" dataKey="vitralabSales" name="Vitralab" stroke="#10b981" strokeWidth={2} activeDot={{ r: 8 }} />
-              <Line type="monotone" dataKey="onixlabSales" name="Onixlab" stroke="#3b82f6" strokeWidth={2} />
-              <Line type="monotone" dataKey="nativalabSales" name="Nativalab" stroke="#f97316" strokeWidth={2} />
+              <Line type="monotone" dataKey="totalSales" name="Vendas Totais (Soma)" stroke="#10b981" strokeWidth={3} activeDot={{ r: 8 }} />
               <Line type="monotone" dataKey="goal" name="Meta" stroke="#ff7300" strokeDasharray="5 5" />
             </LineChart>
           </ResponsiveContainer>
