@@ -4,7 +4,7 @@ import { PerformanceCharts } from './components/PerformanceCharts';
 import { DataEditor } from './components/DataEditor';
 import { BaseDeValoresTable } from './components/BaseDeValoresTable';
 import CommissionDashboard from './components/CommissionDashboard';
-import { INITIAL_DASHBOARD_DATA } from './constants';
+import { INITIAL_DASHBOARD_DATA, syncDashboardDataWithCurrentMonth } from './constants';
 import { DashboardState, MonthlyData } from './types';
 import { Settings, LogOut, Loader2 } from 'lucide-react';
 import { FirebaseProvider, useAuth } from './components/FirebaseProvider';
@@ -113,7 +113,10 @@ function DashboardApp() {
         if (docSnap.exists()) {
           const dashboardState = docSnap.data();
           if (dashboardState.currentMonthId) {
-            setData((prev) => ({ ...prev, currentMonthId: dashboardState.currentMonthId }));
+            setData((prev) => {
+              const updated = { ...prev, currentMonthId: dashboardState.currentMonthId };
+              return syncDashboardDataWithCurrentMonth(updated);
+            });
           }
         } else {
           setDoc(sharedDashboardRef, { currentMonthId: INITIAL_DASHBOARD_DATA.currentMonthId }, { merge: true })
@@ -134,7 +137,10 @@ function DashboardApp() {
           const orderMap = new Map(INITIAL_DASHBOARD_DATA.monthlyData.map((m, i) => [m.id, i]));
           monthlyData.sort((a, b) => (orderMap.get(a.id) ?? 99) - (orderMap.get(b.id) ?? 99));
 
-          setData((prev) => ({ ...prev, monthlyData }));
+          setData((prev) => {
+            const updated = { ...prev, monthlyData };
+            return syncDashboardDataWithCurrentMonth(updated);
+          });
         } else {
           const batch = writeBatch(db);
           INITIAL_DASHBOARD_DATA.monthlyData.forEach((month) => {
@@ -162,16 +168,19 @@ function DashboardApp() {
   const handleUpdateData = async (newData: DashboardState) => {
     if (!user) return;
     
+    // Sincroniza os dados com o mês atual do sistema
+    const syncedData = syncDashboardDataWithCurrentMonth(newData);
+    
     try {
       const batch = writeBatch(db);
       
       // Update currentMonthId
-      if (newData.currentMonthId !== data.currentMonthId) {
-        batch.set(doc(db, SHARED_DASHBOARD_DOC_PATH), { currentMonthId: newData.currentMonthId }, { merge: true });
+      if (syncedData.currentMonthId !== data.currentMonthId) {
+        batch.set(doc(db, SHARED_DASHBOARD_DOC_PATH), { currentMonthId: syncedData.currentMonthId }, { merge: true });
       }
 
       // Update monthly data
-      newData.monthlyData.forEach(month => {
+      syncedData.monthlyData.forEach(month => {
         const docRef = doc(db, `${SHARED_DASHBOARD_MONTHLY_PATH}/${month.id}`);
         batch.set(docRef, month, { merge: true });
       });

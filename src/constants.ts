@@ -1,6 +1,45 @@
 import { DashboardState } from './types';
 
-export const INITIAL_DASHBOARD_DATA: DashboardState = {
+// Função para sincronizar automaticamente o mês atual com a data do sistema
+function getCurrentMonthId(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  const monthMap: { [key: string]: string } = {
+    '01': 'jan',
+    '02': 'fev',
+    '03': 'mar',
+    '04': 'abr',
+    '05': 'mai',
+    '06': 'jun',
+    '07': 'jul',
+    '08': 'ago',
+    '09': 'set',
+    '10': 'out',
+    '11': 'nov',
+    '12': 'dez',
+  };
+  return `${monthMap[month]}-${year}`;
+}
+
+// Função para sincronizar o estado dos dados com o mês atual
+export function syncDashboardDataWithCurrentMonth(data: DashboardState): DashboardState {
+  const currentMonthId = getCurrentMonthId();
+  
+  // Atualiza o mês atual
+  const syncedData = {
+    ...data,
+    currentMonthId,
+    monthlyData: data.monthlyData.map(m => ({
+      ...m,
+      notes: m.id === currentMonthId && !m.notes?.startsWith('Mês') ? 'Mês atual.' : m.notes === 'Mês atual.' && m.id !== currentMonthId ? '' : m.notes,
+    })),
+  };
+  
+  return syncedData;
+}
+
+const rawData = {
   currentMonthId: 'mar-2026',
   monthlyData: [
     {
@@ -53,3 +92,6 @@ export const INITIAL_DASHBOARD_DATA: DashboardState = {
     { id: 'nov-2026', month: 'Novembro 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '', invoiceCount: 0 },
   ],
 };
+
+// Sincroniza os dados iniciais com o mês atual do sistema
+export const INITIAL_DASHBOARD_DATA = syncDashboardDataWithCurrentMonth(rawData);
