@@ -110,7 +110,7 @@ const CommissionDashboard: React.FC<CommissionDashboardProps> = ({ data }) => {
     <div className="bg-black text-white p-6 rounded-xl border border-zinc-800 shadow-lg mb-8">
       {/* Top Section: Days & Realized (Days Elapsed) */}
       <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className="bg-black border border-zinc-700">
+        <div className="bg-black border border-zinc-700 rounded-tl-lg">
           <div className="bg-white text-black text-center font-bold py-1 uppercase text-sm tracking-wider">
             DIAS
           </div>
@@ -118,7 +118,7 @@ const CommissionDashboard: React.FC<CommissionDashboardProps> = ({ data }) => {
             {totalBusinessDays}
           </div>
         </div>
-        <div className="bg-black border border-zinc-700">
+        <div className="bg-black border border-zinc-700 rounded-tr-lg">
           <div className="bg-white text-black text-center font-bold py-1 uppercase text-sm tracking-wider">
             REALIZADO
           </div>
@@ -130,7 +130,7 @@ const CommissionDashboard: React.FC<CommissionDashboardProps> = ({ data }) => {
 
       {/* Middle Section: Commission */}
       <div className="mb-8 flex justify-center">
-        <div className="w-full max-w-md bg-black border border-zinc-700">
+        <div className="w-full max-w-md bg-black border border-zinc-700 rounded-lg">
           <div className="bg-white text-black text-center font-bold py-2 uppercase text-lg tracking-wider">
             COMISSAO
           </div>
@@ -183,7 +183,7 @@ const CommissionDashboard: React.FC<CommissionDashboardProps> = ({ data }) => {
       </div>
 
       {/* Footer Section: Projection */}
-      <div className="grid grid-cols-3 gap-0 border border-zinc-700">
+      <div className="grid grid-cols-2 gap-0 border border-zinc-700 rounded-b-lg overflow-hidden">
         <div className="bg-black border-r border-zinc-700">
           <div className="bg-white text-black text-center font-bold py-1 uppercase text-xs tracking-wider">
             PROJEÇÃO
@@ -191,9 +191,6 @@ const CommissionDashboard: React.FC<CommissionDashboardProps> = ({ data }) => {
           <div className="text-center py-2 font-mono text-white">
             R$ {projection.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
           </div>
-        </div>
-        <div className="bg-black border-r border-zinc-700 flex items-center justify-center">
-          <div className="text-white font-mono text-xl">{'<-->'}</div>
         </div>
         <div className="bg-black">
           <div className="bg-white text-black text-center font-bold py-1 uppercase text-xs tracking-wider">

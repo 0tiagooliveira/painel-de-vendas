@@ -17,7 +17,7 @@ export const PerformanceCharts: React.FC<PerformanceChartsProps> = ({ data }) =>
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
       {/* Sales Evolution */}
       <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl shadow-sm col-span-1 lg:col-span-2">
-        <h3 className="text-zinc-400 text-sm font-medium uppercase tracking-wider mb-6">Evolução de Vendas (Vitralab vs Onixlab vs Nativalab)</h3>
+        <h3 className="text-zinc-400 text-sm font-medium uppercase tracking-wider mb-6">Evolução de Vendas (Vitralab + Onixlab + Nativalab)</h3>
         <div className="h-80 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
