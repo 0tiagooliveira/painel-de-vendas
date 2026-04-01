@@ -36,12 +36,9 @@
         },
         "notes": {
           "type": "string"
-        },
-        "invoiceCount": {
-          "type": "number"
         }
       },
-      "required": ["id", "month", "vitralabSales", "onixlabSales", "nativalabSales", "goal", "notes", "invoiceCount"]
+      "required": ["id", "month", "vitralabSales", "onixlabSales", "nativalabSales", "goal", "notes"]
     }
   },
   "firestore": {

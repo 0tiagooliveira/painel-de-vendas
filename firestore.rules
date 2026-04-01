@@ -21,7 +21,6 @@ service cloud.firestore {
     //   - nativalabSales: number (required)
     //   - goal: number (required)
     //   - notes: string (required)
-    //   - invoiceCount: number (required)
     //
     // Legacy Collection: users
     // Document ID: {userId}
@@ -38,7 +37,6 @@ service cloud.firestore {
     //   - nativalabSales: number (required)
     //   - goal: number (required)
     //   - notes: string (required)
-    //   - invoiceCount: number (required)
     //
     // ===============================================================
 
@@ -65,16 +63,15 @@ service cloud.firestore {
     }
 
     function isValidMonthlyData(data) {
-      return hasOnlyAllowedFields(['id', 'month', 'vitralabSales', 'onixlabSales', 'nativalabSales', 'goal', 'notes', 'invoiceCount']) &&
-             hasRequiredFields(['id', 'month', 'vitralabSales', 'onixlabSales', 'nativalabSales', 'goal', 'notes', 'invoiceCount']) &&
+          return hasOnlyAllowedFields(['id', 'month', 'vitralabSales', 'onixlabSales', 'nativalabSales', 'goal', 'notes']) &&
+            hasRequiredFields(['id', 'month', 'vitralabSales', 'onixlabSales', 'nativalabSales', 'goal', 'notes']) &&
              data.id is string && data.id.size() > 0 && data.id.size() <= 50 &&
              data.month is string && data.month.size() > 0 && data.month.size() <= 50 &&
              data.vitralabSales is number && data.vitralabSales >= 0 &&
              data.onixlabSales is number && data.onixlabSales >= 0 &&
              data.nativalabSales is number && data.nativalabSales >= 0 &&
              data.goal is number && data.goal >= 0 &&
-             data.notes is string && data.notes.size() <= 1000 &&
-             data.invoiceCount is number && data.invoiceCount >= 0;
+            data.notes is string && data.notes.size() <= 1000;
     }
 
     match /sharedDashboard/global {

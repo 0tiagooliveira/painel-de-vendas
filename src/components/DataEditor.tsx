@@ -144,15 +144,6 @@ export const DataEditor: React.FC<DataEditorProps> = ({ data, onUpdate, isOpen, 
                         placeholder="0,00"
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs text-zinc-500 mb-1">Nº Notas</label>
-                      <input
-                        type="number"
-                        value={monthData.invoiceCount || ''}
-                        onChange={(e) => handleMonthlyDataChange(index, 'invoiceCount', Number(e.target.value))}
-                        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
                     <div className="md:col-span-2 lg:col-span-4">
                       <label className="block text-xs text-zinc-500 mb-1">Notas</label>
                       <input

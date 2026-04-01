@@ -50,7 +50,6 @@ const rawData = {
       nativalabSales: 0,
       goal: 45682.41, // Calculado para dar a diferença de 70k (115751 - 70069)
       notes: 'Fim de ano forte.',
-      invoiceCount: 0,
     },
     {
       id: 'jan-2026',
@@ -60,7 +59,6 @@ const rawData = {
       nativalabSales: 0,
       goal: 176500.00, // Calculado para dar a diferença de 9k (185821 - 9321)
       notes: 'Início de ano promissor.',
-      invoiceCount: 0,
     },
     {
       id: 'fev-2026',
@@ -70,7 +68,6 @@ const rawData = {
       nativalabSales: 0,
       goal: 352683.13, // Calculado para dar a diferença de -157k (195143 - (-157539))
       notes: 'Queda em relação à meta.',
-      invoiceCount: 0,
     },
     {
       id: 'mar-2026',
@@ -80,16 +77,15 @@ const rawData = {
       nativalabSales: 0,
       goal: 250000.00,
       notes: 'Mês atual.',
-      invoiceCount: 36,
     },
-    { id: 'abr-2026', month: 'Abril 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '', invoiceCount: 0 },
-    { id: 'mai-2026', month: 'Maio 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '', invoiceCount: 0 },
-    { id: 'jun-2026', month: 'Junho 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '', invoiceCount: 0 },
-    { id: 'jul-2026', month: 'Julho 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '', invoiceCount: 0 },
-    { id: 'ago-2026', month: 'Agosto 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '', invoiceCount: 0 },
-    { id: 'set-2026', month: 'Setembro 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '', invoiceCount: 0 },
-    { id: 'out-2026', month: 'Outubro 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '', invoiceCount: 0 },
-    { id: 'nov-2026', month: 'Novembro 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '', invoiceCount: 0 },
+    { id: 'abr-2026', month: 'Abril 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '' },
+    { id: 'mai-2026', month: 'Maio 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '' },
+    { id: 'jun-2026', month: 'Junho 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '' },
+    { id: 'jul-2026', month: 'Julho 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '' },
+    { id: 'ago-2026', month: 'Agosto 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '' },
+    { id: 'set-2026', month: 'Setembro 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '' },
+    { id: 'out-2026', month: 'Outubro 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '' },
+    { id: 'nov-2026', month: 'Novembro 2026', vitralabSales: 0, onixlabSales: 0, nativalabSales: 0, goal: 200000, notes: '' },
   ],
 };
 

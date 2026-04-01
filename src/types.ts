@@ -6,7 +6,6 @@ export interface MonthlyData {
   nativalabSales: number;
   goal: number; // Meta para cálculo de diferença e %
   notes: string;
-  invoiceCount: number; // Número de notas fiscais emitidas
 }
 
 export interface DashboardState {

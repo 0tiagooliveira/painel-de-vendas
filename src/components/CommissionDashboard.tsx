@@ -150,8 +150,7 @@ const CommissionDashboard: React.FC<CommissionDashboardProps> = ({ data }) => {
               <th className="py-2 px-2 text-center font-bold uppercase border-r border-zinc-300">Meta Diária</th>
               <th className="py-2 px-2 text-center font-bold uppercase border-r border-zinc-300">Realizado</th>
               <th className="py-2 px-2 text-center font-bold uppercase border-r border-zinc-300">Restam</th>
-              <th className="py-2 px-2 text-center font-bold uppercase border-r border-zinc-300">% Atingido</th>
-              <th className="py-2 px-2 text-center font-bold uppercase">Numero de Notas</th>
+              <th className="py-2 px-2 text-center font-bold uppercase">% Atingido</th>
             </tr>
           </thead>
           <tbody>
@@ -171,11 +170,8 @@ const CommissionDashboard: React.FC<CommissionDashboardProps> = ({ data }) => {
               <td className="py-3 px-2 text-center font-mono border-r border-zinc-700">
                 R$ {remainingGoal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </td>
-              <td className="py-3 px-2 text-center font-mono border-r border-zinc-700">
-                {percentageAchieved.toFixed(0)}%
-              </td>
               <td className="py-3 px-2 text-center font-mono">
-                {data.invoiceCount}
+                {percentageAchieved.toFixed(0)}%
               </td>
             </tr>
           </tbody>
