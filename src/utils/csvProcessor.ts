@@ -1,4 +1,5 @@
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 export type EmpresaType = 'Vitralab' | 'Nativalab' | 'Onixlab';
 
@@ -25,15 +26,45 @@ const ufToRegiao: Record<string, string> = {
   'PR': 'Sul', 'RS': 'Sul', 'SC': 'Sul'
 };
 
-export const parseBrazilianCurrency = (value: string): number => {
-  if (!value) return 0;
-  const cleanStr = String(value).replace(/\./g, '').replace(',', '.');
-  const parsed = parseFloat(cleanStr);
+export const parseBrazilianCurrency = (value: string | number): number => {
+  if (value === null || value === undefined || value === '') return 0;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+
+  const raw = String(value).trim().replace(/R\$/gi, '').replace(/\s/g, '');
+  if (!raw) return 0;
+
+  let normalized = raw;
+  if (raw.includes('.') && raw.includes(',')) {
+    normalized = raw.replace(/\./g, '').replace(',', '.');
+  } else if (raw.includes(',')) {
+    normalized = raw.replace(',', '.');
+  }
+
+  normalized = normalized.replace(/[^0-9.-]/g, '');
+  const parsed = parseFloat(normalized);
   return isNaN(parsed) ? 0 : parsed;
 };
 
-export const extractMonthId = (emissao: string): string | null => {
+export const extractMonthId = (emissao: string | Date): string | null => {
   if (!emissao) return null;
+
+  if (emissao instanceof Date && !isNaN(emissao.getTime())) {
+    return `${emissao.getFullYear()}-${String(emissao.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  const emissaoStr = String(emissao).trim();
+  if (!emissaoStr) return null;
+
+  const isoMatch = emissaoStr.match(/^(\d{4})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}`;
+  }
+
+  const brMatch = emissaoStr.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (brMatch) {
+    return `${brMatch[3]}-${brMatch[2]}`;
+  }
+
   const parts = String(emissao).trim().split(' ');
   if (!parts[0]) return null;
   
@@ -61,8 +92,142 @@ export const splitCityAndUF = (cidadeUf: string): { cidade: string; uf: string; 
   return { cidade, uf, regiao };
 };
 
+const normalizeHeader = (header: string): string => {
+  return String(header)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+};
+
+const getFieldValue = (row: Record<string, any>, aliases: string[]): any => {
+  const normalizedAliases = aliases.map((a) => normalizeHeader(a));
+  for (const [key, value] of Object.entries(row)) {
+    if (normalizedAliases.includes(normalizeHeader(key))) {
+      return value;
+    }
+  }
+  return '';
+};
+
+const processInvoiceRows = (rows: any[], empresa: EmpresaType): { data: ProcessedCsvRow[]; errors: string[]; monthId: string } => {
+  const processed: ProcessedCsvRow[] = [];
+  const errors: string[] = [];
+  let mainMonthId: string | null = null;
+
+  rows.forEach((row, index) => {
+    const idCol = getFieldValue(row, ['Id.', 'id.', 'ID.', 'Id', 'id']);
+    if (String(idCol || '').trim().toLowerCase() === 'totais') {
+      return;
+    }
+
+    const emissao = getFieldValue(row, ['Emissão', 'Emissao', 'Data Emissão', 'Data Emissao']);
+    const vProdRaw = getFieldValue(row, ['V.Prod.', 'V Prod', 'Valor Produto', 'VProd']);
+
+    if (!emissao || (vProdRaw === '' || vProdRaw === null || vProdRaw === undefined)) {
+      return;
+    }
+
+    const vProd = parseBrazilianCurrency(vProdRaw);
+    if (vProd <= 0) {
+      return;
+    }
+
+    const monthId = extractMonthId(emissao);
+    if (!monthId) {
+      return;
+    }
+
+    if (!mainMonthId) {
+      mainMonthId = monthId;
+    } else if (mainMonthId !== monthId) {
+      errors.push(`Linha ${index + 2}: Mês diferente detectado (${monthId}). Esperado: ${mainMonthId}. Linha ignorada.`);
+      return;
+    }
+
+    const cidadeUf = getFieldValue(row, ['Cidade', 'Cidade-UF', 'Cidade/UF', 'Município', 'Municipio']);
+    const { cidade, uf, regiao } = splitCityAndUF(String(cidadeUf || ''));
+
+    const numNf = getFieldValue(row, ['Núm/NF-e', 'Num/NF-e', 'NF-e', 'NFe', 'Numero NF', 'Numero NFe']) || String(index);
+    const uniqueKey = `${empresa}-${monthId}-${numNf}-${vProd}`;
+
+    processed.push({
+      id: uniqueKey,
+      uniqueKey,
+      empresa,
+      mesId: monthId,
+      emissao: String(emissao),
+      vProd,
+      cidade,
+      uf,
+      regiao
+    });
+  });
+
+  if (!mainMonthId) {
+    throw new Error('Nenhum dado válido encontrado no arquivo.');
+  }
+
+  return { data: processed, errors, monthId: mainMonthId };
+};
+
+const parseXlsxRows = (file: File): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      try {
+        const arrayBuffer = event.target?.result;
+        if (!arrayBuffer) {
+          reject(new Error('Falha ao ler o arquivo XLSX.'));
+          return;
+        }
+
+        const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+        const firstSheetName = workbook.SheetNames[0];
+        if (!firstSheetName) {
+          reject(new Error('Nenhuma aba encontrada no arquivo XLSX.'));
+          return;
+        }
+
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rows = XLSX.utils.sheet_to_json(worksheet, {
+          defval: '',
+          raw: false,
+          dateNF: 'dd/mm/yyyy'
+        });
+
+        resolve(rows as any[]);
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    reader.onerror = () => reject(new Error('Erro ao carregar o arquivo XLSX.'));
+    reader.readAsArrayBuffer(file);
+  });
+};
+
 export const processInvoiceCsv = (file: File, empresa: EmpresaType): Promise<{ data: ProcessedCsvRow[], errors: string[], monthId: string }> => {
   return new Promise((resolve, reject) => {
+    const fileName = file.name.toLowerCase();
+    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+
+    if (isExcel) {
+      parseXlsxRows(file)
+        .then((rows) => {
+          try {
+            resolve(processInvoiceRows(rows, empresa));
+          } catch (err: any) {
+            reject(err);
+          }
+        })
+        .catch((err: any) => {
+          reject(new Error(`Erro ao ler o arquivo XLSX: ${err.message || err}`));
+        });
+      return;
+    }
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -70,66 +235,7 @@ export const processInvoiceCsv = (file: File, empresa: EmpresaType): Promise<{ d
       complete: (results) => {
         try {
           const rows = results.data as any[];
-          const processed: ProcessedCsvRow[] = [];
-          const errors: string[] = [];
-          let mainMonthId: string | null = null;
-
-          rows.forEach((row, index) => {
-            const idCol = row['Id.'] || row['id.'] || row['ID.'] || row['Id'] || row['id'];
-            if (idCol && String(idCol).trim().toLowerCase() === 'totais') {
-              return;
-            }
-
-            const emissao = row['Emissão'];
-            const vProdStr = row['V.Prod.'];
-
-            if (!emissao || !vProdStr) {
-              return;
-            }
-
-            const vProd = parseBrazilianCurrency(vProdStr);
-            if (vProd <= 0) {
-              return;
-            }
-
-            const monthId = extractMonthId(emissao);
-            if (!monthId) {
-              return;
-            }
-
-            if (!mainMonthId) {
-              mainMonthId = monthId;
-            } else if (mainMonthId !== monthId) {
-              errors.push(`Linha ${index + 2}: Mês diferente detectado (${monthId}). Esperado: ${mainMonthId}. Linha ignorada.`);
-              return;
-            }
-
-            const cidadeKey = Object.keys(row).find(k => k.toLowerCase().includes('cidade'));
-            const cidadeUf = cidadeKey ? row[cidadeKey] : '';
-            const { cidade, uf, regiao } = splitCityAndUF(cidadeUf);
-            
-            const numNf = row['Núm/NF-e'] || row['NF-e'] || String(index);
-            const uniqueKey = `${empresa}-${monthId}-${numNf}-${vProd}`;
-
-            processed.push({
-              id: uniqueKey, // Mantido para compatibilidade com o hook existente
-              uniqueKey,
-              empresa,
-              mesId: monthId,
-              emissao,
-              vProd,
-              cidade,
-              uf,
-              regiao
-            });
-          });
-
-          if (!mainMonthId) {
-            throw new Error("Nenhum dado válido encontrado no arquivo.");
-          }
-
-          resolve({ data: processed, errors, monthId: mainMonthId });
-
+          resolve(processInvoiceRows(rows, empresa));
         } catch (err: any) {
           reject(err);
         }

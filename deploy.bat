@@ -4,6 +4,8 @@ setlocal EnableExtensions EnableDelayedExpansion
 set "TARGET_REPO=https://github.com/0tiagooliveira/painel-de-vendas.git"
 set "PROJECT_ID=painel-de-vendas-c032e"
 set "DEPLOY_ONLY=hosting"
+set "HOSTING_URL=https://%PROJECT_ID%.web.app"
+set "HOSTING_URL_ALT=https://%PROJECT_ID%.firebaseapp.com"
 
 if /I "%~1"=="full" set "DEPLOY_ONLY=hosting,firestore"
 if /I "%~1"=="--full" set "DEPLOY_ONLY=hosting,firestore"
@@ -108,13 +110,12 @@ if errorlevel 1 (
   type "%DEPLOY_LOG%"
   del "%DEPLOY_LOG%" >nul 2>&1
   echo [ERRO] Falha no deploy do Firebase.
+  call :print_links
   exit /b 1
 )
 
 type "%DEPLOY_LOG%"
 
-set "HOSTING_URL=https://%PROJECT_ID%.web.app"
-set "HOSTING_URL_ALT=https://%PROJECT_ID%.firebaseapp.com"
 set "HOSTING_URL_DETECTED="
 
 for /f "tokens=1,* delims=:" %%A in ('findstr /I /C:"Hosting URL" "%DEPLOY_LOG%"') do (
@@ -127,11 +128,15 @@ if defined HOSTING_URL_DETECTED (
 
 del "%DEPLOY_LOG%" >nul 2>&1
 
+echo [OK] Deploy concluido com sucesso!
+call :print_links
+exit /b 0
+
+:print_links
 echo.
 echo ==========================================
-echo  Deploy concluido com sucesso!
-echo  Link principal: !HOSTING_URL!
-echo  Link alternativo: !HOSTING_URL_ALT!
+echo  Link principal: %HOSTING_URL%
+echo  Link alternativo: %HOSTING_URL_ALT%
 if defined HOSTING_URL_DETECTED echo  Link detectado no deploy: !HOSTING_URL_DETECTED!
 echo ==========================================
 echo.

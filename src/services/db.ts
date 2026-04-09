@@ -81,6 +81,17 @@ export const updateCompanyMonthTotal = async (monthId: string, empresa: string, 
   }
 };
 
+export const updateMonthMeta = async (monthId: string, meta: number) => {
+  const docRef = doc(db, COLLECTION_NAME, monthId);
+
+  try {
+    await setDoc(docRef, { id: monthId, meta }, { merge: true });
+  } catch (error) {
+    console.error('Erro ao atualizar a meta do mes:', error);
+    throw error;
+  }
+};
+
 export const saveMonthlyDataBatch = async (dataArray: MonthlyData[]) => {
   const batch = writeBatch(db);
 

@@ -56,7 +56,7 @@ export const CsvUploader: React.FC = () => {
       <div className="px-4 py-5 sm:p-6">
         <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center mb-4">
           <FileSpreadsheet className="h-5 w-5 text-gray-400 mr-2" />
-          Importar Faturamento (CSV)
+          Importar Faturamento (CSV ou XLSX)
         </h3>
         
         <div className="max-w-xl text-sm text-gray-500 mb-5">
@@ -85,7 +85,7 @@ export const CsvUploader: React.FC = () => {
           <div className="flex-1 w-full">
             <input
               type="file"
-              accept=".csv"
+              accept=".csv,.xlsx,.xls"
               ref={fileInputRef}
               onChange={handleFileChange}
               disabled={!empresa || loading}
@@ -105,7 +105,7 @@ export const CsvUploader: React.FC = () => {
               ) : (
                 <Upload className="h-4 w-4 mr-2" />
               )}
-              {loading ? 'Processando...' : 'Selecionar Arquivo CSV'}
+              {loading ? 'Processando...' : 'Selecionar Arquivo CSV/XLSX'}
             </label>
           </div>
         </div>
