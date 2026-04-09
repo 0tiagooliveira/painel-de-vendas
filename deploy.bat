@@ -113,40 +113,26 @@ if errorlevel 1 (
 
 type "%DEPLOY_LOG%"
 
-set "HOSTING_URL="
-set "HOSTING_LINE="
+set "HOSTING_URL=https://%PROJECT_ID%.web.app"
+set "HOSTING_URL_ALT=https://%PROJECT_ID%.firebaseapp.com"
+set "HOSTING_URL_DETECTED="
 
-for /f "delims=" %%i in ('findstr /I /C:"Hosting URL:" "%DEPLOY_LOG%"') do (
-  set "HOSTING_LINE=%%i"
+for /f "tokens=1,* delims=:" %%A in ('findstr /I /C:"Hosting URL" "%DEPLOY_LOG%"') do (
+  set "HOSTING_URL_DETECTED=%%B"
 )
 
-if defined HOSTING_LINE (
-  set "HOSTING_URL=!HOSTING_LINE:*Hosting URL:=!"
+if defined HOSTING_URL_DETECTED (
+  for /f "tokens=* delims= " %%i in ("!HOSTING_URL_DETECTED!") do set "HOSTING_URL_DETECTED=%%i"
 )
-
-if not defined HOSTING_URL (
-  for /f "delims=" %%i in ('findstr /I /C:"Website URL:" "%DEPLOY_LOG%"') do (
-    set "HOSTING_LINE=%%i"
-  )
-  if defined HOSTING_LINE set "HOSTING_URL=!HOSTING_LINE:*Website URL:=!"
-)
-
-if defined HOSTING_URL (
-  for /f "tokens=* delims= " %%i in ("!HOSTING_URL!") do set "HOSTING_URL=%%i"
-)
-
-set "HOSTING_URL_WEBAPP=https://%PROJECT_ID%.web.app"
-set "HOSTING_URL_FIREBASEAPP=https://%PROJECT_ID%.firebaseapp.com"
-if not defined HOSTING_URL set "HOSTING_URL=!HOSTING_URL_WEBAPP!"
 
 del "%DEPLOY_LOG%" >nul 2>&1
 
 echo.
 echo ==========================================
 echo  Deploy concluido com sucesso!
-echo  Link do projeto: !HOSTING_URL!
-echo  Fallback 1: !HOSTING_URL_WEBAPP!
-echo  Fallback 2: !HOSTING_URL_FIREBASEAPP!
+echo  Link principal: !HOSTING_URL!
+echo  Link alternativo: !HOSTING_URL_ALT!
+if defined HOSTING_URL_DETECTED echo  Link detectado no deploy: !HOSTING_URL_DETECTED!
 echo ==========================================
 echo.
 exit /b 0
