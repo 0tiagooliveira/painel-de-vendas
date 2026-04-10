@@ -28,6 +28,12 @@ export const CommissionCards: React.FC<Props> = ({ data }) => {
 
   return (
     <div className="space-y-6">
+      <div>
+        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+          Referente ao mes selecionado: {data.id}
+        </span>
+      </div>
+
       {/* Comissão Líquida */}
       <div className="bg-white overflow-hidden shadow rounded-lg border border-gray-100">
         <div className="px-4 py-5 sm:p-6">

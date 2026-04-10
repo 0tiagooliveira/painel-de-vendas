@@ -77,7 +77,7 @@ const extractMonthIdWithPreference = (emissao: string | Date, preference: 'dmy' 
     return `${isoMatch[1]}-${isoMatch[2]}`;
   }
 
-  const brMatch = emissaoStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})/);
+  const brMatch = emissaoStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})/);
   if (brMatch) {
     const first = Number(brMatch[1]);
     const second = Number(brMatch[2]);
@@ -248,8 +248,80 @@ const processInvoiceRows = (rows: any[], empresa: EmpresaType): { data: Processe
   return { data: processed, errors, monthId: mainMonthId };
 };
 
-const parseXlsxRows = (file: File): Promise<any[]> => {
+const parseHtmlXlsRows = (fileText: string): any[] => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(fileText, 'text/html');
+  const table = doc.querySelector('table');
+  if (!table) return [];
+
+  const rows = Array.from(table.querySelectorAll('tr'));
+  if (rows.length === 0) return [];
+
+  const headerCells = Array.from(rows[0].querySelectorAll('th,td'));
+  const headers = headerCells.map((cell) => cell.textContent?.replace(/\u00a0/g, ' ').trim() || '');
+  if (headers.length === 0) return [];
+
+  const dataRows: any[] = [];
+  for (let i = 1; i < rows.length; i += 1) {
+    const cells = Array.from(rows[i].querySelectorAll('td'));
+    if (cells.length < headers.length) continue;
+
+    const rowObj: Record<string, string> = {};
+    headers.forEach((header, index) => {
+      rowObj[header] = cells[index]?.textContent?.replace(/\u00a0/g, ' ').trim() || '';
+    });
+
+    dataRows.push(rowObj);
+  }
+
+  return dataRows;
+};
+
+const parseSpreadsheetRows = (file: File): Promise<any[]> => {
   return new Promise((resolve, reject) => {
+    const fileName = file.name.toLowerCase();
+    const isLegacyXls = fileName.endsWith('.xls');
+
+    if (isLegacyXls) {
+      const textReader = new FileReader();
+
+      textReader.onload = () => {
+        try {
+          const text = String(textReader.result || '');
+          if (/<table[\s>]/i.test(text) && /<html[\s>]/i.test(text)) {
+            const htmlRows = parseHtmlXlsRows(text);
+            if (htmlRows.length > 0) {
+              resolve(htmlRows);
+              return;
+            }
+          }
+
+          // Fallback para .xls binario real
+          const workbook = XLSX.read(text, { type: 'binary', cellDates: true });
+          const firstSheetName = workbook.SheetNames[0];
+          if (!firstSheetName) {
+            reject(new Error('Nenhuma aba encontrada no arquivo XLS.'));
+            return;
+          }
+
+          const worksheet = workbook.Sheets[firstSheetName];
+          const rows = XLSX.utils.sheet_to_json(worksheet, {
+            defval: '',
+            raw: true,
+            dateNF: 'dd/mm/yyyy'
+          });
+
+          resolve(rows as any[]);
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      textReader.onerror = () => reject(new Error('Erro ao carregar o arquivo XLS.'));
+      textReader.readAsText(file);
+      return;
+    }
+
     const reader = new FileReader();
 
     reader.onload = (event) => {
@@ -270,7 +342,7 @@ const parseXlsxRows = (file: File): Promise<any[]> => {
         const worksheet = workbook.Sheets[firstSheetName];
         const rows = XLSX.utils.sheet_to_json(worksheet, {
           defval: '',
-          raw: false,
+          raw: true,
           dateNF: 'dd/mm/yyyy'
         });
 
@@ -291,7 +363,7 @@ export const processInvoiceCsv = (file: File, empresa: EmpresaType): Promise<{ d
     const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
 
     if (isExcel) {
-      parseXlsxRows(file)
+      parseSpreadsheetRows(file)
         .then((rows) => {
           try {
             resolve(processInvoiceRows(rows, empresa));

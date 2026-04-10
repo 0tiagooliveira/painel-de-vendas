@@ -30,7 +30,13 @@ export const OverviewCards: React.FC<Props> = ({ data }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <div>
+      <div className="mb-3">
+        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+          Referente ao mes selecionado: {data.id}
+        </span>
+      </div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {/* Vendas Totais */}
       <div className="bg-white overflow-hidden shadow rounded-lg">
         <div className="p-5">
@@ -126,6 +132,7 @@ export const OverviewCards: React.FC<Props> = ({ data }) => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
