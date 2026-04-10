@@ -55,14 +55,37 @@ export const extractMonthId = (emissao: string | Date): string | null => {
   const emissaoStr = String(emissao).trim();
   if (!emissaoStr) return null;
 
+  const normalizeYear = (year: number): number => {
+    if (year < 100) {
+      return year >= 70 ? 1900 + year : 2000 + year;
+    }
+    return year;
+  };
+
+  const monthIdFromParts = (year: number, month: number): string | null => {
+    if (month < 1 || month > 12) return null;
+    const normalizedYear = normalizeYear(year);
+    return `${normalizedYear}-${String(month).padStart(2, '0')}`;
+  };
+
   const isoMatch = emissaoStr.match(/^(\d{4})-(\d{2})/);
   if (isoMatch) {
     return `${isoMatch[1]}-${isoMatch[2]}`;
   }
 
-  const brMatch = emissaoStr.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  const brMatch = emissaoStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})/);
   if (brMatch) {
-    return `${brMatch[3]}-${brMatch[2]}`;
+    const first = Number(brMatch[1]);
+    const second = Number(brMatch[2]);
+    const year = Number(brMatch[3]);
+
+    // Exportacoes antigas de Excel podem chegar como M/D/YY.
+    // Se o primeiro numero for <= 12, preferimos interpretar como mes.
+    if (first >= 1 && first <= 12) {
+      return monthIdFromParts(year, first);
+    }
+
+    return monthIdFromParts(year, second);
   }
 
   const parts = String(emissao).trim().split(' ');
@@ -70,7 +93,19 @@ export const extractMonthId = (emissao: string | Date): string | null => {
   
   const dateParts = parts[0].split('/');
   if (dateParts.length >= 3) {
-    return `${dateParts[2]}-${dateParts[1]}`;
+    const first = Number(dateParts[0]);
+    const second = Number(dateParts[1]);
+    const year = Number(dateParts[2]);
+
+    if (Number.isNaN(first) || Number.isNaN(second) || Number.isNaN(year)) {
+      return null;
+    }
+
+    if (first >= 1 && first <= 12) {
+      return monthIdFromParts(year, first);
+    }
+
+    return monthIdFromParts(year, second);
   }
   return null;
 };
