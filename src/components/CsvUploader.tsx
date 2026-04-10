@@ -23,19 +23,19 @@ export const CsvUploader: React.FC = () => {
       await saveInvoiceBatch(data);
       
       // Calculate total and save to Firestore
-      const totalVProd = data.reduce((acc, row) => acc + row.vProd, 0);
+      const totalVProd = Number(data.reduce((acc, row) => acc + row.vProd, 0).toFixed(2));
       await updateCompanyMonthTotal(monthId, empresa as string, totalVProd);
       
       if (errors && errors.length > 0) {
         setMessage({
           type: 'warning',
-          text: `Upload concluído com avisos! ${data.length} itens inseridos. O total de R$ ${(totalVProd).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} foi salvo na Base de Valores.`,
+          text: `Upload concluído com avisos! ${data.length} itens inseridos. O total de R$ ${(totalVProd).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} foi salvo na Base de Valores.`,
           details: errors
         });
       } else {
         setMessage({
           type: 'success',
-          text: `Upload concluído com sucesso! ${data.length} itens inseridos. O total de R$ ${(totalVProd).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} foi salvo na Base de Valores.`
+          text: `Upload concluído com sucesso! ${data.length} itens inseridos. O total de R$ ${(totalVProd).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} foi salvo na Base de Valores.`
         });
       }
     } catch (err: any) {

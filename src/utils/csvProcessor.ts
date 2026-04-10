@@ -46,6 +46,10 @@ export const parseBrazilianCurrency = (value: string | number): number => {
 };
 
 export const extractMonthId = (emissao: string | Date): string | null => {
+  return extractMonthIdWithPreference(emissao, 'dmy');
+};
+
+const extractMonthIdWithPreference = (emissao: string | Date, preference: 'dmy' | 'mdy'): string | null => {
   if (!emissao) return null;
 
   if (emissao instanceof Date && !isNaN(emissao.getTime())) {
@@ -79,11 +83,15 @@ export const extractMonthId = (emissao: string | Date): string | null => {
     const second = Number(brMatch[2]);
     const year = Number(brMatch[3]);
 
-    // Exportacoes antigas de Excel podem chegar como M/D/YY.
-    // Se o primeiro numero for <= 12, preferimos interpretar como mes.
-    if (first >= 1 && first <= 12) {
+    if (first > 12 && second >= 1 && second <= 12) {
+      return monthIdFromParts(year, second);
+    }
+
+    if (second > 12 && first >= 1 && first <= 12) {
       return monthIdFromParts(year, first);
     }
+
+    if (preference === 'mdy') return monthIdFromParts(year, first);
 
     return monthIdFromParts(year, second);
   }
@@ -101,13 +109,46 @@ export const extractMonthId = (emissao: string | Date): string | null => {
       return null;
     }
 
-    if (first >= 1 && first <= 12) {
+    if (first > 12 && second >= 1 && second <= 12) {
+      return monthIdFromParts(year, second);
+    }
+
+    if (second > 12 && first >= 1 && first <= 12) {
       return monthIdFromParts(year, first);
     }
+
+    if (preference === 'mdy') return monthIdFromParts(year, first);
 
     return monthIdFromParts(year, second);
   }
   return null;
+};
+
+const detectDatePreference = (rows: any[]): 'dmy' | 'mdy' => {
+  const dmyMonths = new Set<string>();
+  const mdyMonths = new Set<string>();
+  let ambiguousCount = 0;
+
+  rows.forEach((row) => {
+    const emissao = getFieldValue(row, ['Emissão', 'Emissao', 'Data Emissão', 'Data Emissao']);
+    const vProdRaw = getFieldValue(row, ['V.Prod.', 'V Prod', 'Valor Produto', 'VProd']);
+    const vProd = parseBrazilianCurrency(vProdRaw);
+
+    if (!emissao || vProd <= 0) return;
+
+    const dmyMonth = extractMonthIdWithPreference(emissao, 'dmy');
+    const mdyMonth = extractMonthIdWithPreference(emissao, 'mdy');
+
+    if (dmyMonth) dmyMonths.add(dmyMonth);
+    if (mdyMonth) mdyMonths.add(mdyMonth);
+    if (dmyMonth && mdyMonth && dmyMonth !== mdyMonth) ambiguousCount += 1;
+  });
+
+  if (ambiguousCount > 0 && mdyMonths.size < dmyMonths.size) {
+    return 'mdy';
+  }
+
+  return 'dmy';
 };
 
 export const splitCityAndUF = (cidadeUf: string): { cidade: string; uf: string; regiao: string } => {
@@ -149,6 +190,7 @@ const processInvoiceRows = (rows: any[], empresa: EmpresaType): { data: Processe
   const processed: ProcessedCsvRow[] = [];
   const errors: string[] = [];
   let mainMonthId: string | null = null;
+  const datePreference = detectDatePreference(rows);
 
   rows.forEach((row, index) => {
     const idCol = getFieldValue(row, ['Id.', 'id.', 'ID.', 'Id', 'id']);
@@ -168,7 +210,7 @@ const processInvoiceRows = (rows: any[], empresa: EmpresaType): { data: Processe
       return;
     }
 
-    const monthId = extractMonthId(emissao);
+    const monthId = extractMonthIdWithPreference(emissao, datePreference);
     if (!monthId) {
       return;
     }
