@@ -111,6 +111,7 @@ if errorlevel 1 (
   del "%DEPLOY_LOG%" >nul 2>&1
   echo [ERRO] Falha no deploy do Firebase.
   call :print_links
+  call :wait_to_close
   exit /b 1
 )
 
@@ -130,6 +131,7 @@ del "%DEPLOY_LOG%" >nul 2>&1
 
 echo [OK] Deploy concluido com sucesso!
 call :print_links
+call :wait_to_close
 exit /b 0
 
 :print_links
@@ -140,6 +142,11 @@ echo  Link alternativo: %HOSTING_URL_ALT%
 if defined HOSTING_URL_DETECTED echo  Link detectado no deploy: !HOSTING_URL_DETECTED!
 echo ==========================================
 echo.
+exit /b 0
+
+:wait_to_close
+echo Pressione qualquer tecla para fechar...
+pause >nul
 exit /b 0
 
 :check_prereq
