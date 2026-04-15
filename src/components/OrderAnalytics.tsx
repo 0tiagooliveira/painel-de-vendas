@@ -1,6 +1,15 @@
 import React, { useMemo } from 'react';
 import { useCsvMemory } from '../hooks/useCsvMemory';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 import { Package, ShoppingCart } from 'lucide-react';
 
 interface Props {
@@ -14,20 +23,45 @@ const COMPANY_LABELS: Record<string, string> = {
 };
 
 const COMPANY_COLORS: Record<string, string> = {
-  Vitralab: '#14b8a6',
-  Onixlab: '#f97316',
-  Nativalab: '#6366f1',
+  Vitralab: '#19d3a2',
+  Onixlab: '#4d8dff',
+  Nativalab: '#ff7a18',
 };
 
 export const OrderAnalytics: React.FC<Props> = ({ selectedMonthId }) => {
   const { state, loading } = useCsvMemory();
 
-  const { totalOrders, ordersByCompany, chartData } = useMemo(() => {
-    const filtered = state.data.filter((item) => item.mesId === selectedMonthId);
+  const chartPalette = {
+    panelBg: '#171a22',
+    panelBorder: '#2a2f3a',
+    grid: '#2b3140',
+    axis: '#6b7280',
+    axisText: '#8892a6',
+    tooltipBg: '#1f2430',
+    tooltipBorder: '#323949',
+  };
+
+  const { totalOrders, ordersByCompany, chartData, yearLabel } = useMemo(() => {
+    const year = selectedMonthId.split('-')[0];
+    const months = Array.from({ length: 12 }, (_, index) => {
+      const monthNum = String(index + 1).padStart(2, '0');
+      return `${year}-${monthNum}`;
+    });
+
+    const filtered = state.data.filter((item) => item.mesId.startsWith(`${year}-`));
     const companyMap = new Map<string, number>();
+    const monthlyMap = new Map<string, { Vitralab: number; Onixlab: number; Nativalab: number }>();
+
+    months.forEach((monthId) => {
+      monthlyMap.set(monthId, { Vitralab: 0, Onixlab: 0, Nativalab: 0 });
+    });
 
     filtered.forEach((item) => {
       companyMap.set(item.empresa, (companyMap.get(item.empresa) || 0) + 1);
+      const monthTotals = monthlyMap.get(item.mesId);
+      if (monthTotals) {
+        monthTotals[item.empresa] += 1;
+      }
     });
 
     const ordersByCompany = Object.entries(COMPANY_LABELS).map(([company]) => ({
@@ -36,10 +70,26 @@ export const OrderAnalytics: React.FC<Props> = ({ selectedMonthId }) => {
       color: COMPANY_COLORS[company],
     }));
 
+    const chartData = months.map((monthId) => {
+      const monthData = monthlyMap.get(monthId) || { Vitralab: 0, Onixlab: 0, Nativalab: 0 };
+      const date = new Date(parseInt(year, 10), parseInt(monthId.split('-')[1], 10) - 1);
+      const monthName = date.toLocaleString('pt-BR', { month: 'short' });
+      const formattedName = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`;
+
+      return {
+        name: formattedName,
+        Vitralab: monthData.Vitralab,
+        Onixlab: monthData.Onixlab,
+        Nativalab: monthData.Nativalab,
+      };
+    });
+
     return {
       totalOrders: filtered.length,
       ordersByCompany,
       chartData: ordersByCompany,
+      chartData,
+      yearLabel: year,
     };
   }, [selectedMonthId, state.data]);
 
@@ -47,16 +97,23 @@ export const OrderAnalytics: React.FC<Props> = ({ selectedMonthId }) => {
     if (active && payload && payload.length) {
       const item = payload[0];
       return (
-        <div className="bg-gray-800 p-3 border border-gray-700 shadow-lg rounded-md">
-          <p className="font-semibold text-gray-100 mb-1">Pedidos por empresa</p>
-          <p className="text-blue-300 font-medium">
-            {item.payload?.name || item.name}: {item.value} pedidos
-          </p>
+        <div
+          className="p-3 border shadow-lg rounded-md"
+          style={{ backgroundColor: chartPalette.tooltipBg, borderColor: chartPalette.tooltipBorder }}
+        >
+          <p className="font-semibold text-gray-200 mb-2">{item.payload?.name || item.name}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }} className="text-sm font-medium">
+              {entry.name}: {entry.value} pedidos
+            </p>
+          ))}
         </div>
       );
     }
     return null;
   };
+
+  const formatYAxis = (value: number) => `${value}`;
 
   if (loading) {
     return (
@@ -65,6 +122,8 @@ export const OrderAnalytics: React.FC<Props> = ({ selectedMonthId }) => {
       </div>
     );
   }
+
+  const hasOrders = chartData.some((month) => month.Vitralab > 0 || month.Onixlab > 0 || month.Nativalab > 0);
 
   return (
     <div className="mt-8 space-y-6">
@@ -77,7 +136,7 @@ export const OrderAnalytics: React.FC<Props> = ({ selectedMonthId }) => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total de pedidos</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Total de pedidos no ano</dt>
                   <dd className="flex items-baseline">
                     <div className="text-2xl font-semibold text-gray-900">{totalOrders}</div>
                   </dd>
@@ -95,7 +154,7 @@ export const OrderAnalytics: React.FC<Props> = ({ selectedMonthId }) => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Empresas com pedidos</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Empresas com pedidos no ano</dt>
                   <dd className="flex items-baseline">
                     <div className="text-2xl font-semibold text-gray-900">
                       {ordersByCompany.filter((item) => item.value > 0).length}
@@ -108,29 +167,76 @@ export const OrderAnalytics: React.FC<Props> = ({ selectedMonthId }) => {
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-lg shadow border border-gray-100">
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <div>
-            <h3 className="text-lg font-medium text-gray-900">Pedidos por empresa</h3>
-            <p className="text-sm text-gray-500">Quantidade de pedidos importados no mês selecionado.</p>
-          </div>
-        </div>
+      <div
+        className="p-6 rounded-xl shadow-lg"
+        style={{ backgroundColor: chartPalette.panelBg, border: `1px solid ${chartPalette.panelBorder}` }}
+      >
+        <h3 className="text-sm font-semibold text-gray-300 mb-2 uppercase tracking-wider">
+          Pedidos por Empresa ao Longo do Ano ({yearLabel})
+        </h3>
+        <p className="text-sm text-gray-400 mb-6">Quantidade de pedidos por mês, separada por empresa.</p>
 
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} tickLine={false} axisLine={{ stroke: '#d1d5db' }} />
-              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: '#6b7280' }} tickLine={false} axisLine={{ stroke: '#d1d5db' }} />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f3f4f6' }} />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={56}>
-                {chartData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {!hasOrders ? (
+          <div className="h-[400px] flex items-center justify-center text-gray-400 text-sm">
+            Nenhum pedido encontrado para o ano selecionado.
+          </div>
+        ) : (
+          <div className="h-[400px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 25, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke={chartPalette.grid} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 12, fill: chartPalette.axisText }}
+                  tickMargin={15}
+                  axisLine={{ stroke: chartPalette.axis }}
+                  tickLine={false}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 12, fill: chartPalette.axisText }}
+                  axisLine={{ stroke: chartPalette.axis }}
+                  tickLine={false}
+                  tickMargin={10}
+                  tickFormatter={formatYAxis}
+                />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: chartPalette.axis, strokeWidth: 1, strokeDasharray: '3 3' }} />
+                <Legend
+                  wrapperStyle={{ paddingTop: '20px', bottom: 0 }}
+                  iconType="circle"
+                  formatter={(value, entry: any) => <span style={{ color: entry.color, fontWeight: 600 }}>{value}</span>}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Vitralab"
+                  name="Vitralab"
+                  stroke={COMPANY_COLORS.Vitralab}
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: COMPANY_COLORS.Vitralab, stroke: '#fff', strokeWidth: 1 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Onixlab"
+                  name="Onixlab"
+                  stroke={COMPANY_COLORS.Onixlab}
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: COMPANY_COLORS.Onixlab, stroke: '#fff', strokeWidth: 1 }}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Nativalab"
+                  name="Nativalab"
+                  stroke={COMPANY_COLORS.Nativalab}
+                  strokeWidth={2.5}
+                  dot={{ r: 4, fill: COMPANY_COLORS.Nativalab, stroke: '#fff', strokeWidth: 1 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
     </div>
   );
