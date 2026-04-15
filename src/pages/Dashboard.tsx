@@ -3,6 +3,7 @@ import { DashboardLayout } from '../components/DashboardLayout';
 import { OverviewCards } from '../components/OverviewCards';
 import { CommissionCards } from '../components/CommissionCards';
 import { HistoricalCharts } from '../components/HistoricalCharts';
+import { OrderAnalytics } from '../components/OrderAnalytics';
 import { MonthlyDataTable } from '../components/MonthlyDataTable';
 import { CsvUploader } from '../components/CsvUploader';
 import { CsvDashboard } from '../components/CsvDashboard';
@@ -147,6 +148,12 @@ export const Dashboard: React.FC = () => {
               <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-1">Tendência Histórica</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Evolução mensal e composição das vendas ao longo do ano.</p>
               <HistoricalCharts data={data} selectedMonthId={selectedMonthId} />
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-1">Pedidos</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Resumo da quantidade de pedidos por empresa e do total no mês selecionado.</p>
+              <OrderAnalytics selectedMonthId={selectedMonthId} />
             </section>
 
             <section className="pt-8 border-t border-gray-200 dark:border-gray-700">
