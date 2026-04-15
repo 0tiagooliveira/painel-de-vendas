@@ -10,7 +10,7 @@ const CommissionDashboard: React.FC<CommissionDashboardProps> = ({ data }) => {
   const totalSales = data.vitralabSales + data.onixlabSales + data.nativalabSales;
   
   // Commission Calculation
-  // 1. Mercado Livre takes 19.96%
+  // 1. Marketplace takes 19.96%
   const mlFee = totalSales * 0.1996;
   // 2. Remaining value
   const remainingAfterFee = totalSales - mlFee;

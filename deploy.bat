@@ -3,10 +3,10 @@ setlocal enabledelayedexpansion
 
 cd /d "%~dp0"
 
-set "FIREBASE_PROJECT_ID=dashboard-mercado-livre-ionlab"
+set "FIREBASE_PROJECT_ID=painel-de-vendas-c032e"
 set "HOSTING_URL_1=https://%FIREBASE_PROJECT_ID%.web.app"
 set "HOSTING_URL_2=https://%FIREBASE_PROJECT_ID%.firebaseapp.com"
-set "GITHUB_REPO_URL=https://github.com/0tiagooliveira/dashboard-ionlab.git"
+set "GITHUB_REPO_URL=https://github.com/0tiagooliveira/painel-de-vendas.git"
 set "DEPLOY_ONLY=hosting"
 
 if /I "%~1"=="full" (

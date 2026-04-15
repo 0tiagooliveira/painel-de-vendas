@@ -3,6 +3,7 @@ import { DashboardOverview } from './components/DashboardOverview';
 import { PerformanceCharts } from './components/PerformanceCharts';
 import { DataEditor } from './components/DataEditor';
 import { BaseDeValoresTable } from './components/BaseDeValoresTable';
+import { RegionalSalesUploader } from './components/RegionalSalesUploader';
 import CommissionDashboard from './components/CommissionDashboard';
 import { INITIAL_DASHBOARD_DATA, syncDashboardDataWithCurrentMonth } from './constants';
 import { DashboardState, MonthlyData } from './types';
@@ -248,21 +249,21 @@ function DashboardApp() {
             <div className="flex items-center gap-4 border-r border-zinc-700 pr-6">
               <img 
                 src="https://images.tcdn.com.br/files/1357340/themes/65/img/settings/Rodape.png?fab777a79b774a4a7cb8c5be223c6fae" 
-                alt="IonLab Logo" 
+                alt="Painel de Vendas" 
                 className="h-8 object-contain"
                 referrerPolicy="no-referrer"
               />
               <img 
                 src="https://ecommerce.sejaumpartner.com/wp-content/uploads/2022/12/PARCEIRO3.webp" 
-                alt="Mercado Livre Logo" 
+                alt="Marketplace" 
                 className="h-8 object-contain"
                 referrerPolicy="no-referrer"
               />
             </div>
             
             <div className="hidden md:block">
-              <h1 className="text-xl font-bold tracking-tight text-white">Painel de Controle</h1>
-              <p className="text-xs text-zinc-500 font-medium">Gestão de Vendas Mercado Livre</p>
+              <h1 className="text-xl font-bold tracking-tight text-white">Painel de Vendas</h1>
+              <p className="text-xs text-zinc-500 font-medium">Acompanhamento de Vendas</p>
             </div>
           </div>
           
@@ -310,6 +311,7 @@ function DashboardApp() {
         
         <PerformanceCharts data={data.monthlyData} />
         <BaseDeValoresTable data={data.monthlyData} />
+        <RegionalSalesUploader />
       </main>
 
       {/* Editor Modal */}
@@ -341,13 +343,13 @@ function AuthWrapper() {
           <div className="flex justify-center gap-4 mb-8">
             <img 
               src="https://images.tcdn.com.br/files/1357340/themes/65/img/settings/Rodape.png?fab777a79b774a4a7cb8c5be223c6fae" 
-              alt="IonLab Logo" 
+              alt="Painel de Vendas" 
               className="h-10 object-contain"
               referrerPolicy="no-referrer"
             />
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">Painel de Controle</h1>
-          <p className="text-zinc-400 mb-8">Faça login para acessar e sincronizar seus dados de vendas.</p>
+          <h1 className="text-2xl font-bold text-white mb-2">Painel de Vendas</h1>
+          <p className="text-zinc-400 mb-8">Faça login para acessar e sincronizar o Painel de Vendas.</p>
           
           <button
             onClick={signIn}

@@ -1,3 +1,11 @@
+export interface CitySalesEntry {
+  region: string;
+  total: number;
+  vitralab: number;
+  onix: number;
+  nativalab: number;
+}
+
 export interface MonthlyData {
   id: string;
   month: string;
@@ -6,6 +14,7 @@ export interface MonthlyData {
   nativalabSales: number;
   goal: number; // Meta para cálculo de diferença e %
   notes: string;
+  citySales?: Record<string, CitySalesEntry>;
 }
 
 export interface DashboardState {

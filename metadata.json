@@ -1,5 +1,5 @@
 {
-  "name": "IonLab Dashboard",
-  "description": "Interactive sales dashboard for IonLab with real-time data editing and performance tracking.",
+  "name": "Painel de Vendas",
+  "description": "Painel de Vendas com acompanhamento comercial e edicao em tempo real.",
   "requestFramePermissions": []
 }

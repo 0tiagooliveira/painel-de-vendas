@@ -1,9 +1,9 @@
 {
-  "projectId": "dashboard-mercado-livre-ionlab",
-  "appId": "1:961048448838:web:38d649f9967c9b4f721f47",
-  "apiKey": "AIzaSyCXtdCv985xT6LQMweazSO2XO1PTcSIqEY",
-  "authDomain": "dashboard-mercado-livre-ionlab.firebaseapp.com",
-  "storageBucket": "dashboard-mercado-livre-ionlab.firebasestorage.app",
-  "messagingSenderId": "961048448838",
-  "measurementId": "G-BLCMK24M2E"
+  "apiKey": "AIzaSyCgYMV12ytzdxbs4jB0GI5PVrivemGKE-s",
+  "authDomain": "painel-de-vendas-c032e.firebaseapp.com",
+  "projectId": "painel-de-vendas-c032e",
+  "storageBucket": "painel-de-vendas-c032e.firebasestorage.app",
+  "messagingSenderId": "1053506080807",
+  "appId": "1:1053506080807:web:74904805e1c7831ecb7e02",
+  "measurementId": "G-1XN6GMEF30"
 }
